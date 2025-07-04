@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pixel Art Pasta Gösterimi</title>
+  <style>
+    html, body {
+      margin:0; padding:0; height:100%;
+      background-color: #2c2255;
+      font-family: 'Courier New', monospace;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      color: #e6e2ff;
+      user-select: none;
+    }
+    header h1 {
+      margin: 20px 0 15px;
+      color: #e6e2ff;
+      font-size: 2.4rem;
+      text-shadow: 2px 2px #5a4f8a;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .card {
+      width: 95vw;
+      max-width: 800px; /* Kart genişliğini artırdık */
+      background: #8a7edb;
+      border: 4px solid #6249ac;
+      box-shadow: 8px 8px 0 #a28fff;
+      padding: 15px; /* Padding'i biraz azalttık */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-radius: 0;
+      box-sizing: border-box;
+    }
+
+    img.pixel-art {
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      user-select: none;
+    }
+    
+    .media-row {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      flex-wrap: wrap; /* Küçük ekranlarda alt alta geçiş */
+    }
+
+    video#video, img.pixel-art {
+      flex: 1 1 45%; /* Her biri %45 yer kaplasın */
+      max-width: 370px; /* Maksimum genişlik sınırı */
+      height: auto;
+      border: 2px solid #6249ac;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    canvas#canvas {
+      display: none;
+    }
+
+    .message-output {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #2c2255;
+      background-color: #b7b3ff;
+      border: 4px solid #6249ac;
+      border-radius: 8px;
+      padding: 15px;
+      width: 100%;
+      max-width: 770px; /* Kart genişliğine göre ayar */
+      box-shadow: inset 4px 4px 0 #a28fff;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 16px;
+      color: #d5d3ff;
+      text-shadow: 1px 1px #2c2255;
+    }
+
+    /* Responsive için biraz daha küçülme */
+    @media (max-width: 500px) {
+      .media-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      video#video, img.pixel-art {
+        flex: 1 1 100%;
+        max-width: 100%;
+      }
+      .message-output {
+        max-width: 100%;
+      }
+    }
+
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+</head>
+<body>
+
+  <header>
+    <h1>Doğum Günün Kutlu Olsun!</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="media-row">
+        <video id="video" autoplay muted></video>
+        <img src="images/cake.gif" alt="Pasta" class="pixel-art" />
+      </div>
+      <canvas id="canvas" width="360" height="270"></canvas>
+
+      <div class="message-output">
+        Merhaba!<br>
+        Sana mutlu, sağlıklı ve neşeli bir yıl dilerim!<br>
+        İyi ki doğdun! 🎉🎂
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2025 Esra'nın Sürpriz Sitesi
+  </footer>
+
+  <script>
+  const videoElement = document.getElementById('video');
+  const canvasElement = document.getElementById('canvas');
+  const canvasCtx = canvasElement.getContext('2d');
+  const pastaImg = document.querySelector('img.pixel-art');
+  const messageOutput = document.querySelector('.message-output');
+
+  let mumSonduruldu = false;
+
+  const faceMesh = new FaceMesh({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+  });
+
+  faceMesh.setOptions({
+    maxNumFaces: 1,
+    refineLandmarks: true,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+
+  faceMesh.onResults(onResults);
+
+  const camera = new Camera(videoElement, {
+    onFrame: async () => {
+      await faceMesh.send({image: videoElement});
+    },
+    width: 360,
+    height: 270
+  });
+
+  camera.start();
+
+  function onResults(results) {
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0 && !mumSonduruldu) {
+      const landmarks = results.multiFaceLandmarks[0];
+
+      const lipTop = landmarks[13];
+      const lipBottom = landmarks[14];
+      const lipDistance = Math.abs(lipTop.y - lipBottom.y);
+
+      if (lipDistance > 0.05) {
+        mumSonduruldu = true;
+        setTimeout(() => {
+        pastaImg.src = 'images/cake2.png';
+        messageOutput.innerHTML = 'Mum söndü! Doğum günün kutlu olsun! 🎉🎂';
+
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+      }, 500);
+      }
+    }
+
+    canvasCtx.restore();
+  }
+  </script>
+
+</body>
+</html>
